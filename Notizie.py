@@ -31,7 +31,7 @@ fonti_rss = [
 
 # --- I TEMI SCELTI DA TE ---
 temi = [
-    "Prima pagina", 
+    "Prima pagina italiana", 
     "Politica italiana", 
     "Politica mondiale", 
     "Attualità italiana",
