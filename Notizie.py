@@ -1,15 +1,25 @@
 import streamlit as st
 import feedparser
+import google.generativeai as genai
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
-# Impostiamo l'app per essere vista bene da cellulare
 st.set_page_config(page_title="Il Mio Notiziario", page_icon="📰", layout="centered")
 
-st.title("📰 Il Tuo Notiziario Personale")
-st.write("Scegli un tema e scopri cosa succede nel mondo.")
+# --- CONFIGURAZIONE API ---
+try:
+    api_key = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=api_key)
+except Exception as e:
+    st.error("⚠️ Configura GEMINI_API_KEY nei Secrets di Streamlit!")
+    st.stop() # Ferma il programma se manca la chiave
+
+# Motore AGGIORNATO: Gemini 3.1 Flash-Lite (Super veloce, limiti più alti)
+model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
+
+st.title("📰 Il Tuo Notiziario Personale AI")
+st.write("Scegli un tema. L'Intelligenza Artificiale leggerà le fonti di tutto il mondo, tradurrà e creerà un unico articolo per te.")
 
 # --- LE TUE FONTI RSS ---
-# Qui salviamo i link ai feed RSS dei siti che hai scelto
 fonti_rss = [
     "https://www.ansa.it/sito/ansait_rss.xml",
     "https://www.adnkronos.com/rss.xml",
@@ -25,15 +35,17 @@ fonti_rss = [
     "https://feeds.arstechnica.com/arstechnica/index",
     "https://techcrunch.com/feed/",
     "https://www.nasa.gov/rss/dyn/breaking_news.rss",
-    "https://www.sciencedaily.com/rss/top.xml"
-    # (Nota: ne ho inseriti alcuni, gli altri li aggiungeremo man mano per non appesantire il codice ora)
+    "https://www.sciencedaily.com/rss/top.xml",
+    "https://www.nature.com/nature.rss",
+    "https://www.theregister.com/headlines.atom",
+    "https://lifehacker.com/feed/rss"
 ]
 
 # --- I TEMI SCELTI DA TE ---
 temi = [
-    "Prima pagina italiana", 
-    "Politica italiana", 
-    "Politica mondiale", 
+    "Prima pagina", 
+    "Politico italiano", 
+    "Politico mondiale", 
     "Attualità italiana",
     "Sport italiano",
     "Economia mondiale",
@@ -44,32 +56,46 @@ temi = [
     "Musica mondiale"
 ]
 
-# --- INTERFACCIA UTENTE (I BOTTONI) ---
-# Usiamo i "pills" o un menu a tendina/radio che su telefono sono comodissimi da tappare
 tema_selezionato = st.radio("Seleziona il tema che ti interessa:", temi)
 
-st.divider() # Una linea per separare
+st.divider()
 
 # --- IL MOTORE DEL PROGRAMMA ---
-if st.button("Genera Notizia 🚀", use_container_width=True):
-    # Quando l'utente preme il bottone grande, il programma parte
-    st.info(f"Sto raccogliendo le notizie per il tema: **{tema_selezionato}**...")
-    
-    # 1. Raccogliamo tutte le notizie (solo i titoli per ora)
-    tutte_le_notizie = []
-    for link in fonti_rss:
-        feed = feedparser.parse(link)
-        for articolo in feed.entries[:3]: # Prendiamo solo i primi 3 per fonte per fare veloce
-            tutte_le_notizie.append(articolo.title)
-    
-    st.success("Notizie raccolte! Ora l'Intelligenza Artificiale le leggerebbe e farebbe il riassunto.")
-    
-    # 2. IL POSTO DELL'INTELLIGENZA ARTIFICIALE (Placeholder)
-    st.markdown("### 📝 Il Grande Riassunto Unico")
-    st.write(f"*Qui, in futuro, apparirà il testo unico scritto dall'AI, tradotto in italiano, che parla solo di {tema_selezionato}, usando le informazioni prese da ANSA, NYT, The Verge, ecc.*")
-    
-    # Mostriamo cosa vede il programma dietro le quinte
-    with st.expander("Curioso di vedere i titoli grezzi che l'AI dovrà leggere?"):
-        for notizia in tutte_le_notizie[:10]: # Ne mostriamo solo 10 di esempio
-            st.write(f"- {notizia}")
+if st.button("Genera Notizia Magica ✨", use_container_width=True):
+    with st.spinner(f"Sto setacciando il web per: {tema_selezionato}... e chiedendo a Gemini 3.1 di scrivere l'articolo!"):
+        
+        # 1. Raccogliamo i titoli
+        testo_grezzo_notizie = ""
+        for link in fonti_rss:
+            try:
+                feed = feedparser.parse(link)
+                for articolo in feed.entries[:5]: 
+                    testo_grezzo_notizie += f"- {articolo.title}\n"
+            except:
+                pass 
+        
+        # 2. Il Prompt per Gemini
+        prompt = f"""
+        Sei un giornalista esperto e imparziale. Ti fornirò una lunga lista di titoli di notizie appena estratti da agenzie di stampa mondiali.
+        Il tuo compito è:
+        1. Filtrare le notizie: tieni in considerazione SOLO quelle che riguardano questo specifico tema: "{tema_selezionato}". Ignora categoricamente tutte le altre.
+        2. Tradurre tutto in italiano corretto e scorrevole.
+        3. Fondere le informazioni: non farmi un elenco dei titoli, ma scrivi un UNICO articolo coeso e ben leggibile che riassuma cosa sta succedendo nel mondo riguardo al tema scelto.
+        4. Dividi il testo in brevi paragrafi per facilitare la lettura da smartphone.
+        5. Se non trovi nessuna notizia rilevante per il tema scelto nella lista fornita, scrivi semplicemente: "Al momento non ci sono notizie di rilievo su questo tema dalle fonti selezionate."
 
+        Ecco i titoli grezzi estratti oggi:
+        {testo_grezzo_notizie}
+        """
+
+        # 3. Chiediamo a Gemini di generare la risposta
+        try:
+            risposta = model.generate_content(prompt)
+            st.success("Fatto! Ecco il tuo riassunto:")
+            
+            st.markdown("### 🗞️ Il Tuo Articolo")
+            st.write(risposta.text)
+            
+        except Exception as e:
+            st.error(f"Ops! C'è stato un problema con l'Intelligenza Artificiale: {e}")
+        
