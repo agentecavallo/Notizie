@@ -7,17 +7,7 @@ import aiohttp
 import os
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
-st.set_page_config(page_title="Notizie Michelone", page_icon="📰", layout="wide")
-
-# --- MAGIA CSS PER FORZARE LE 2 COLONNE SU TELEFONO ---
-st.markdown("""
-<style>
-    /* Questo trucco dice a Streamlit di non impilare le colonne sui piccoli schermi */
-    div[data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Notizie Michelone", page_icon="📰", layout="centered")
 
 # --- CONFIGURAZIONE API ---
 try:
@@ -97,7 +87,7 @@ CATEGORIE_NOTIZIE = {
     "👦 Ragazzi": [
         "https://www.focusjunior.it/feed/",
         "https://www.focus.it/rss",
-        "https://www.ilpost.it/feed/" # Spiegano molto bene le cose
+        "https://www.ilpost.it/feed/"
     ],
     "🍿 Intrattenimento": [
         "https://www.ilpost.it/feed/",
@@ -115,21 +105,13 @@ st.write("Tocca una categoria per generare il tuo bollettino personale.")
 
 st.divider()
 
-# --- CREAZIONE DELLA GRIGLIA A 2 COLONNE ---
-nomi_categorie = list(CATEGORIE_NOTIZIE.keys())
+# --- CREAZIONE BOTTONI A LISTA VERTICALE (OTTIMIZZATI PER LA GUIDA) ---
 tema_scelto_dal_bottone = None
 
-# Ora il ciclo salta di 2 in 2
-for i in range(0, len(nomi_categorie), 2):
-    col1, col2 = st.columns(2)
-    
-    if i < len(nomi_categorie):
-        if col1.button(nomi_categorie[i], use_container_width=True):
-            tema_scelto_dal_bottone = nomi_categorie[i]
-            
-    if i + 1 < len(nomi_categorie):
-        if col2.button(nomi_categorie[i+1], use_container_width=True):
-            tema_scelto_dal_bottone = nomi_categorie[i+1]
+# Un semplice loop che crea una bella lista impilata, sicura ed elegante
+for categoria in CATEGORIE_NOTIZIE.keys():
+    if st.button(categoria, use_container_width=True):
+        tema_scelto_dal_bottone = categoria
 
 st.divider()
 
