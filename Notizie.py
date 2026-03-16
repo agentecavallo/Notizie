@@ -1,6 +1,8 @@
 import streamlit as st
 import feedparser
 import google.generativeai as genai
+from gtts import gTTS
+from io import BytesIO
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Il Mio Notiziario", page_icon="📰", layout="centered")
@@ -11,9 +13,9 @@ try:
     genai.configure(api_key=api_key)
 except Exception as e:
     st.error("⚠️ Configura GEMINI_API_KEY nei Secrets di Streamlit!")
-    st.stop() # Ferma il programma se manca la chiave
+    st.stop()
 
-# Motore AGGIORNATO: Gemini 3.1 Flash-Lite (Super veloce, limiti più alti)
+# Motore AGGIORNATO: Gemini 3.1 Flash-Lite
 model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
 
 st.title("📰 Il Tuo Notiziario Personale AI")
@@ -91,11 +93,31 @@ if st.button("Genera Notizia Magica ✨", use_container_width=True):
         # 3. Chiediamo a Gemini di generare la risposta
         try:
             risposta = model.generate_content(prompt)
+            testo_articolo = risposta.text
+            
             st.success("Fatto! Ecco il tuo riassunto:")
             
+            # Mostriamo il risultato scritto
             st.markdown("### 🗞️ Il Tuo Articolo")
-            st.write(risposta.text)
+            st.write(testo_articolo)
+            
+            # 4. CREAZIONE DELL'AUDIO (Text-to-Speech)
+            st.markdown("### 🎧 Ascolta la notizia")
+            with st.spinner("Sto generando l'audio per te..."):
+                # Puliamo il testo da asterischi o cancelletti che l'AI usa per la formattazione
+                testo_pulito = testo_articolo.replace("*", "").replace("#", "")
+                
+                # Creiamo l'audio in italiano
+                tts = gTTS(text=testo_pulito, lang='it', slow=False)
+                
+                # Lo salviamo "al volo" nella memoria del programma senza creare file inutili
+                audio_file = BytesIO()
+                tts.write_to_fp(audio_file)
+                audio_file.seek(0)
+                
+                # Mostriamo il player audio sullo schermo
+                st.audio(audio_file, format='audio/mp3')
             
         except Exception as e:
-            st.error(f"Ops! C'è stato un problema con l'Intelligenza Artificiale: {e}")
+            st.error(f"Ops! C'è stato un problema: {e}")
         
