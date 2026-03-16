@@ -9,6 +9,16 @@ import os
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Notizie Michelone", page_icon="📰", layout="wide")
 
+# --- MAGIA CSS PER FORZARE LE 2 COLONNE SU TELEFONO ---
+st.markdown("""
+<style>
+    /* Questo trucco dice a Streamlit di non impilare le colonne sui piccoli schermi */
+    div[data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- CONFIGURAZIONE API ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
@@ -17,7 +27,6 @@ except Exception as e:
     st.error("⚠️ Configura GEMINI_API_KEY nei Secrets di Streamlit!")
     st.stop()
 
-# Motore: Gemini 3.1 Flash-Lite
 model = genai.GenerativeModel('gemini-3.1-flash-lite-preview')
 
 # --- FUNZIONI ASINCRONE ---
@@ -68,12 +77,10 @@ CATEGORIE_NOTIZIE = {
         "https://www.hdblog.it/rss/",
         "https://www.wired.it/feed/rss",
         "https://www.theverge.com/rss/index.xml",
-        "https://techcrunch.com/feed/",
-        "https://www.punto-informatico.it/feed/"
+        "https://techcrunch.com/feed/"
     ],
     "🔬 Scienza": [
         "https://www.nasa.gov/rss/dyn/breaking_news.rss",
-        "https://www.nature.com/nature.rss",
         "https://www.sciencedaily.com/rss/top.xml",
         "https://www.focus.it/rss"
     ],
@@ -86,6 +93,11 @@ CATEGORIE_NOTIZIE = {
         "https://www.lalaziosiamonoi.it/rss",
         "https://www.cittaceleste.it/feed/",
         "https://www.laziochannel.it/feed/"
+    ],
+    "👦 Ragazzi": [
+        "https://www.focusjunior.it/feed/",
+        "https://www.focus.it/rss",
+        "https://www.ilpost.it/feed/" # Spiegano molto bene le cose
     ],
     "🍿 Intrattenimento": [
         "https://www.ilpost.it/feed/",
@@ -103,12 +115,13 @@ st.write("Tocca una categoria per generare il tuo bollettino personale.")
 
 st.divider()
 
-# --- CREAZIONE DELLA GRIGLIA DI BOTTONI ---
+# --- CREAZIONE DELLA GRIGLIA A 2 COLONNE ---
 nomi_categorie = list(CATEGORIE_NOTIZIE.keys())
 tema_scelto_dal_bottone = None
 
-for i in range(0, len(nomi_categorie), 3):
-    col1, col2, col3 = st.columns(3)
+# Ora il ciclo salta di 2 in 2
+for i in range(0, len(nomi_categorie), 2):
+    col1, col2 = st.columns(2)
     
     if i < len(nomi_categorie):
         if col1.button(nomi_categorie[i], use_container_width=True):
@@ -117,10 +130,6 @@ for i in range(0, len(nomi_categorie), 3):
     if i + 1 < len(nomi_categorie):
         if col2.button(nomi_categorie[i+1], use_container_width=True):
             tema_scelto_dal_bottone = nomi_categorie[i+1]
-            
-    if i + 2 < len(nomi_categorie):
-        if col3.button(nomi_categorie[i+2], use_container_width=True):
-            tema_scelto_dal_bottone = nomi_categorie[i+2]
 
 st.divider()
 
@@ -128,7 +137,7 @@ st.divider()
 if tema_scelto_dal_bottone:
     link_da_scaricare = CATEGORIE_NOTIZIE[tema_scelto_dal_bottone]
     
-    with st.spinner(f"Sto preparando l'edizione di Notizie Michelone per: {tema_scelto_dal_bottone}..."):
+    with st.spinner(f"Sto preparando l'edizione per: {tema_scelto_dal_bottone}..."):
         
         risultati_siti = asyncio.run(raccogli_tutte_le_notizie(link_da_scaricare))
         
@@ -138,6 +147,20 @@ if tema_scelto_dal_bottone:
                 for articolo in feed.entries[:7]: 
                     testo_grezzo_notizie += f"- {articolo.title}\n"
         
+        # LOGICA SPECIALE PER I RAGAZZI
+        if tema_scelto_dal_bottone == "👦 Ragazzi":
+            istruzioni_speciali = """
+            ATTENZIONE: Questo bollettino è destinato a ragazzi e bambini sotto i 14 anni.
+            Devi essere un divulgatore simpatico e rassicurante.
+            Ignora ASSOLUTAMENTE notizie di cronaca nera, violenza, guerre crude o politica complessa.
+            Scegli solo notizie curiose, scientifiche, storie positive o spiegazioni di eventi importanti adatte alla loro età.
+            Usa un linguaggio semplice, divertente ed educativo, dando del "tu" ai ragazzi.
+            """
+        else:
+            istruzioni_speciali = """
+            Scrivi in modo chiaro, autorevole e piacevole, pensato per essere letto ad alta voce dalla tua voce artificiale direttamente a Michelone. Evita elenchi puntati o frasi robotiche.
+            """
+
         prompt = f"""
         Sei l'assistente giornalistico personale di Michelone.
         Oggi stai preparando l'edizione esclusiva di "Notizie Michelone" sul tema: "{tema_scelto_dal_bottone}".
@@ -146,11 +169,10 @@ if tema_scelto_dal_bottone:
         {testo_grezzo_notizie}
         
         Il tuo compito è:
-        1. Ignorare le notizie fuori tema o palesemente inutili.
-        2. Fondere tutto in un unico discorso molto fluido, avvincente e scorrevole.
-        3. Scrivi in modo chiaro e piacevole, pensato per essere letto ad alta voce dalla tua voce artificiale direttamente a Michelone. Evita elenchi puntati o frasi robotiche.
-        4. Inizia sempre il bollettino dicendo esattamente: "Benvenuto a Notizie Michelone, ecco gli aggiornamenti su..."
-        5. Se non ci sono vere notizie, inventa una chiusura simpatica dicendo a Michelone che per ora la situazione è tranquilla.
+        1. Fondere le notizie utili in un unico discorso fluido, avvincente e scorrevole.
+        2. {istruzioni_speciali}
+        3. Inizia sempre il bollettino dicendo esattamente: "Benvenuto a Notizie Michelone, ecco gli aggiornamenti su..."
+        4. Se non ci sono vere notizie, inventa una chiusura simpatica dicendo che per ora la situazione è tranquilla.
         """
 
         try:
