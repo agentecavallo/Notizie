@@ -105,10 +105,9 @@ st.write("Tocca una categoria per generare il tuo bollettino personale.")
 
 st.divider()
 
-# --- CREAZIONE BOTTONI A LISTA VERTICALE (OTTIMIZZATI PER LA GUIDA) ---
+# --- CREAZIONE BOTTONI A LISTA VERTICALE ---
 tema_scelto_dal_bottone = None
 
-# Un semplice loop che crea una bella lista impilata, sicura ed elegante
 for categoria in CATEGORIE_NOTIZIE.keys():
     if st.button(categoria, use_container_width=True):
         tema_scelto_dal_bottone = categoria
@@ -126,10 +125,10 @@ if tema_scelto_dal_bottone:
         testo_grezzo_notizie = ""
         for feed in risultati_siti:
             if feed and 'entries' in feed:
-                for articolo in feed.entries[:7]: 
+                # ECCO LA MODIFICA: Peschiamo solo le prime 8 notizie per ogni fonte
+                for articolo in feed.entries[:8]: 
                     testo_grezzo_notizie += f"- {articolo.title}\n"
         
-        # LOGICA SPECIALE PER I RAGAZZI
         if tema_scelto_dal_bottone == "👦 Ragazzi":
             istruzioni_speciali = """
             ATTENZIONE: Questo bollettino è destinato a ragazzi e bambini sotto i 14 anni.
@@ -147,14 +146,15 @@ if tema_scelto_dal_bottone:
         Sei l'assistente giornalistico personale di Michelone.
         Oggi stai preparando l'edizione esclusiva di "Notizie Michelone" sul tema: "{tema_scelto_dal_bottone}".
         
-        Ecco i titoli appena battuti dalle agenzie di stampa:
+        Ecco i titoli appena battuti dalle agenzie di stampa (le prime 8 notizie per fonte):
         {testo_grezzo_notizie}
         
         Il tuo compito è:
         1. Fondere le notizie utili in un unico discorso fluido, avvincente e scorrevole.
         2. {istruzioni_speciali}
         3. Inizia sempre il bollettino dicendo esattamente: "Benvenuto a Notizie Michelone, ecco gli aggiornamenti su..."
-        4. Se non ci sono vere notizie, inventa una chiusura simpatica dicendo che per ora la situazione è tranquilla.
+        4. Scrivi un bollettino LUNGO e DETTAGLIATO. Spiega bene il contesto delle notizie che hai scelto di includere, approfondendo l'argomento in modo discorsivo.
+        5. Se non ci sono vere notizie, inventa una chiusura simpatica dicendo che per ora la situazione è tranquilla.
         """
 
         try:
