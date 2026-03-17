@@ -7,7 +7,7 @@ import aiohttp
 import os
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
-st.set_page_config(page_title="Notizie Michelone", page_icon="📰", layout="centered")
+st.set_page_config(page_title="Notizie Michele", page_icon="📰", layout="centered")
 
 # --- CONFIGURAZIONE API ---
 try:
@@ -38,7 +38,7 @@ async def raccogli_tutte_le_notizie(lista_link):
         risultati = await asyncio.gather(*lavori)
         return risultati
 
-# --- I TEMI DI NOTIZIE MICHELONE ---
+# --- I TEMI DI NOTIZIE MICHELE ---
 CATEGORIE_NOTIZIE = {
     "🌍 Prima Pagina": [
         "https://www.ansa.it/sito/ansait_rss.xml",
@@ -85,8 +85,15 @@ CATEGORIE_NOTIZIE = {
         "https://www.laziochannel.it/feed/"
     ],
     "👦 Ragazzi": [
+        # Tantissime fonti specifiche per i più giovani!
         "https://www.focusjunior.it/feed/",
+        "https://feeds.bbci.co.uk/newsround/rss.xml", # Notizie BBC per ragazzi
+        "https://www.skuola.net/rss.xml", # Mondo scuola e studenti
+        "https://multiplayer.it/feed/rss/", # Videogiochi
+        "https://www.fumettologica.it/feed/", # Fumetti e animazione
         "https://www.focus.it/rss",
+        "https://www.nasa.gov/rss/dyn/breaking_news.rss", # Spazio
+        "https://www.wired.it/feed/rss", # Tecnologia
         "https://www.ilpost.it/feed/"
     ],
     "🍿 Intrattenimento": [
@@ -100,7 +107,7 @@ CATEGORIE_NOTIZIE = {
 }
 
 # --- INTERFACCIA UTENTE ---
-st.title("📰 Notizie Michelone")
+st.title("📰 Notizie Michele")
 st.write("Tocca una categoria per generare il tuo bollettino personale.")
 
 st.divider()
@@ -125,7 +132,6 @@ if tema_scelto_dal_bottone:
         testo_grezzo_notizie = ""
         for feed in risultati_siti:
             if feed and 'entries' in feed:
-                # ECCO LA MODIFICA: Peschiamo solo le prime 8 notizie per ogni fonte
                 for articolo in feed.entries[:8]: 
                     testo_grezzo_notizie += f"- {articolo.title}\n"
         
@@ -133,18 +139,18 @@ if tema_scelto_dal_bottone:
             istruzioni_speciali = """
             ATTENZIONE: Questo bollettino è destinato a ragazzi e bambini sotto i 14 anni.
             Devi essere un divulgatore simpatico e rassicurante.
-            Ignora ASSOLUTAMENTE notizie di cronaca nera, violenza, guerre crude o politica complessa.
-            Scegli solo notizie curiose, scientifiche, storie positive o spiegazioni di eventi importanti adatte alla loro età.
+            Ignora ASSOLUTAMENTE notizie di cronaca nera, cronaca locale, violenza, guerre crude o politica complessa.
+            Scegli solo notizie legate a videogiochi, fumetti, curiosità scientifiche, scuola, spazio, storie positive o spiegazioni di eventi importanti adatte alla loro età.
             Usa un linguaggio semplice, divertente ed educativo, dando del "tu" ai ragazzi.
             """
         else:
             istruzioni_speciali = """
-            Scrivi in modo chiaro, autorevole e piacevole, pensato per essere letto ad alta voce dalla tua voce artificiale direttamente a Michelone. Evita elenchi puntati o frasi robotiche.
+            Scrivi in modo chiaro, autorevole e piacevole, pensato per essere letto ad alta voce dalla tua voce artificiale direttamente a Michele. Evita elenchi puntati o frasi robotiche.
             """
 
         prompt = f"""
-        Sei l'assistente giornalistico personale di Michelone.
-        Oggi stai preparando l'edizione esclusiva di "Notizie Michelone" sul tema: "{tema_scelto_dal_bottone}".
+        Sei l'assistente giornalistico personale di Michele.
+        Oggi stai preparando l'edizione esclusiva di "Notizie Michele" sul tema: "{tema_scelto_dal_bottone}".
         
         Ecco i titoli appena battuti dalle agenzie di stampa (le prime 8 notizie per fonte):
         {testo_grezzo_notizie}
@@ -152,18 +158,18 @@ if tema_scelto_dal_bottone:
         Il tuo compito è:
         1. Fondere le notizie utili in un unico discorso fluido, avvincente e scorrevole.
         2. {istruzioni_speciali}
-        3. Inizia sempre il bollettino dicendo esattamente: "Benvenuto a Notizie Michelone, ecco gli aggiornamenti su..."
+        3. Inizia sempre il bollettino dicendo esattamente: "Benvenuto a Notizie Michele, ecco gli aggiornamenti su..."
         4. Scrivi un bollettino LUNGO e DETTAGLIATO. Spiega bene il contesto delle notizie che hai scelto di includere, approfondendo l'argomento in modo discorsivo.
-        5. Se non ci sono vere notizie, inventa una chiusura simpatica dicendo che per ora la situazione è tranquilla.
+        5. Se non ci sono vere notizie, inventa una chiusura simpatica dicendo a Michele che per ora la situazione è tranquilla.
         """
 
         try:
             risposta = model.generate_content(prompt)
             testo_articolo = risposta.text
             
-            st.markdown(f"### 🎧 Ascolta Notizie Michelone: {tema_scelto_dal_bottone}")
+            st.markdown(f"### 🎧 Ascolta Notizie Michele: {tema_scelto_dal_bottone}")
             testo_pulito = testo_articolo.replace("*", "").replace("#", "")
-            file_audio = "notizie_michelone.mp3"
+            file_audio = "notizie_michele.mp3"
             
             asyncio.run(crea_audio_naturale(testo_pulito, file_audio))
             
@@ -174,4 +180,3 @@ if tema_scelto_dal_bottone:
             
         except Exception as e:
             st.error(f"Ops! C'è stato un problema di redazione: {e}")
-        
